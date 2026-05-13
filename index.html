@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard raamdecoratie.com &#8212; Q1+April 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",Arial,sans-serif;background:#F9F7F4;color:#2D2D2D;font-size:13px}
+/* ── header ── */
+.hdr{background:#2D2D2D;padding:0 24px;display:flex;align-items:center;justify-content:space-between;min-height:56px;gap:10px;flex-wrap:wrap}
+.brand{font-family:"DM Mono",monospace;font-size:15px;font-weight:500;color:#F59901}
+.hdr-right{display:flex;gap:8px;align-items:center}
+.bdg{padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700}
+.bdg-q1{background:#F59901;color:#2D2D2D}
+.bdg-apr{background:#9c27b0;color:#fff}
+/* ── tabs ── */
+.tabs{background:#fff;border-bottom:1.5px solid #eee;display:flex;overflow-x:auto;padding:0 16px}
+.tab{padding:10px 14px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;border-bottom:2.5px solid transparent;color:#999;white-space:nowrap;font-family:"DM Sans",sans-serif}
+.tab.active{color:#F59901;border-bottom-color:#F59901}
+.tab.ta{color:#9c27b0}.tab.ta.active{color:#9c27b0;border-bottom-color:#9c27b0}
+.tab.tb{color:#1565c0}.tab.tb.active{color:#1565c0;border-bottom-color:#1565c0}
+.tab.tg{color:#27ae60}.tab.tg.active{color:#27ae60;border-bottom-color:#27ae60}
+.tab.tu{background:#F59901;color:#2D2D2D;border-radius:20px;margin:6px 4px;padding:5px 14px;font-weight:700}
+.tab.tu:hover,.tab.tu.active{background:#e08800;border-bottom-color:transparent;color:#2D2D2D}
+.tab:hover:not(.tu){color:#2D2D2D}
+/* ── pages ── */
+.page{display:none;padding:20px 24px;max-width:1300px}.page.active{display:block}
+/* ── upload page ── */
+#page-upload{display:none;padding:36px 24px}
+#page-upload.active{display:block}
+.up-hero{text-align:center;margin-bottom:32px}
+.up-hero h2{font-size:22px;font-weight:700;color:#2D2D2D;margin-bottom:8px}
+.up-hero p{font-size:13px;color:#888;max-width:520px;margin:0 auto;line-height:1.7}
+.up-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px;margin:0 auto 24px}
+.up-card{background:#fff;border:2px dashed #ddd;border-radius:14px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.up-card:hover,.up-card.drag-over{border-color:#F59901;background:#fffdf5}
+.up-card.loaded{border-color:#27ae60;border-style:solid;background:#f0fdf4}
+.up-card .uc-icon{font-size:34px;margin-bottom:10px;display:block}
+.up-card .uc-title{font-size:13px;font-weight:700;margin-bottom:5px}
+.up-card .uc-sub{font-size:11px;color:#999;line-height:1.6}
+.up-card .uc-ok{font-size:12px;color:#27ae60;font-weight:700;margin-top:10px;display:none}
+.up-card input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.up-steps{max-width:700px;margin:0 auto 24px;background:#fff;border-radius:12px;border:1px solid #eee;padding:18px 22px}
+.up-steps h3{font-size:13px;font-weight:700;margin-bottom:12px;color:#2D2D2D}
+.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;font-size:12px;color:#555}
+.step-num{background:#F59901;color:#2D2D2D;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+.btn-process{display:block;margin:0 auto;background:#F59901;color:#2D2D2D;border:none;padding:13px 40px;border-radius:30px;font-size:14px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .2s}
+.btn-process:hover{background:#e08800;transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,153,1,.3)}
+.btn-process:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.up-error{color:#e74c3c;font-size:12px;background:#fdf0f0;border:1px solid #fbb;border-radius:8px;padding:10px 14px;max-width:700px;margin:12px auto;text-align:center;display:none}
+.up-progress{max-width:400px;margin:12px auto;height:6px;background:#eee;border-radius:10px;overflow:hidden;display:none}
+.up-progress-fill{height:100%;background:#F59901;border-radius:10px;width:0;transition:width .3s}
+.up-note{max-width:700px;margin:16px auto 0;font-size:11px;color:#bbb;text-align:center;line-height:1.8}
+/* ── layout ── */
+.sec{font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#bbb;margin:20px 0 11px;display:flex;align-items:center;gap:8px}
+.sec::before{content:"";display:block;width:3px;height:13px;background:#F59901;border-radius:2px}
+.sec.sbl::before{background:#1565c0}.sec.spu::before{background:#9c27b0}.sec.sgr::before{background:#27ae60}
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:11px;padding:14px 16px;border:1px solid #eee;position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:#eee}
+.kpi.ka::after{background:#F59901}.kpi.kg2::after{background:#27ae60}
+.kpi.kb::after{background:#1565c0}.kpi.kp::after{background:#9c27b0}.kpi.kr::after{background:#e74c3c}
+.klbl{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.kval{font-size:22px;font-weight:700;color:#2D2D2D;line-height:1.2}
+.ksub{font-size:10px;color:#bbb;margin-top:3px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px}
+.card{background:#fff;border-radius:11px;padding:16px;border:1px solid #eee}
+.card.full{grid-column:1/-1}
+.ctitle{font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:11px}
+.leg{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:8px;font-size:11px;color:#999}
+.leg span{display:flex;align-items:center;gap:4px}
+.dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+/* ── tables ── */
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:#2D2D2D;color:#fff;padding:7px 9px;text-align:left;font-size:11px;font-weight:500}
+thead th.hb{background:#1565c0}thead th.hp{background:#9c27b0}thead th.hg{background:#27ae60}
+tbody tr:nth-child(even){background:#fafafa}
+tbody tr:hover{background:#fff8ec}
+tbody td{padding:6px 9px;border-bottom:1px solid #f2f2f2}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.pg{background:#e8f5e9;color:#1b5e20}.po{background:#fff3e0;color:#e65100}
+.pr{background:#fce4ec;color:#ad1457}.pd{background:#2D2D2D;color:#F59901}.pa{background:#f3e5f5;color:#6a1b9a}
+.tr-tot td{border-top:2px solid #2D2D2D;background:#f4f4f4!important;font-weight:700}
+.tr-q1 td{background:#fafafa!important;font-weight:600;border-top:1px dashed #ddd}
+.tr-avg td{border-top:2px dashed #F59901;background:#fff8ec!important;font-weight:700}
+.scr{overflow-x:auto;margin-bottom:14px}
+/* ── info boxes ── */
+.ibox{border-radius:0 9px 9px 0;padding:11px 15px;margin-bottom:10px;border-left:3px solid #F59901;background:#fff8ec}
+.ibox.ibl{border-left-color:#1565c0;background:#e8f0fe}
+.ibox.iwarn{border-left-color:#e74c3c;background:#fdf0f0}
+.ibox.igood{border-left-color:#27ae60;background:#f0fdf4}
+.ibox.ipu{border-left-color:#9c27b0;background:#fdf5ff}
+.ibox .it{font-weight:700;font-size:12px;margin-bottom:3px}
+.ibox p{font-size:12px;color:#555;line-height:1.55}
+.mbbar{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.mb{padding:5px 14px;border:1.5px solid #eee;border-radius:20px;font-size:12px;cursor:pointer;background:#fff;color:#555;font-weight:600;font-family:"DM Sans",sans-serif}
+.mb.active{background:#2D2D2D;color:#F59901;border-color:#2D2D2D}
+.ncb{background:#e3f2fd;border:1.5px solid #1565c0;border-radius:11px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px}
+.ncb .ico{font-size:26px;line-height:1}
+.ncb .txt{font-size:12px;color:#1565c0}
+.ncb strong{font-size:17px;display:block;color:#0d47a1;margin-bottom:3px}
+.ig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+@media(max-width:680px){.row2{grid-column:1fr}.ig{grid-template-columns:1fr}.up-grid{grid-template-columns:1fr}.page{padding:12px}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="brand">raamdecoratie.com</div>
+  <div class="hdr-right">
+    <span class="bdg bdg-q1">Q1 2026</span>
+    <span class="bdg bdg-apr">April 2026</span>
+  </div>
+</div>
+<div class="tabs" id="tabBar">
+  <button class="tab active"  onclick="showPage('ov',this)">&#128202; Overzicht</button>
+  <button class="tab"         onclick="showPage('adv',this)">&#128100; Adviseurs</button>
+  <button class="tab"         onclick="showPage('prov',this)">&#128506; Provincie</button>
+  <button class="tab"         onclick="showPage('regio',this)">&#128205; Adv. per regio</button>
+  <button class="tab"         onclick="showPage('nab',this)">&#128222; Nabellen</button>
+  <button class="tab ta"      onclick="showPage('apr',this)">&#128995; April detail</button>
+  <button class="tab tb"      onclick="showPage('nc',this)">&#128338; Nieuwe best.</button>
+  <button class="tab tu"      onclick="showPage('upload',this)">&#8679; Nieuw bestand uploaden</button>
+</div>
+<div class="page" id="page-upload">
+  <div class="up-hero">
+    <h2>&#128196; Nieuw bestand uploaden</h2>
+    <p>Upload een bijgewerkte bellijst en/of het provincie-bestand. Het dashboard verwerkt alles automatisch en vervangt de huidige data.</p>
+  </div>
+
+  <div class="up-steps">
+    <h3>Hoe werkt het?</h3>
+    <div class="step"><div class="step-num">1</div><div>Upload je <strong>bellijst XLSX</strong> (&#233;&#233;n bestand met alle maanden als aparte tabbladen, of meerdere bestanden per maand)</div></div>
+    <div class="step"><div class="step-num">2</div><div>Upload het <strong>provincie-bestand XLSX</strong> (kolom A = ordernummer, kolom B = provincie, per tabblad per maand: jan / feb / mrt / apr)</div></div>
+    <div class="step"><div class="step-num">3</div><div>Klik op <strong>Verwerk bestanden</strong> &mdash; het dashboard herlaadt automatisch met de nieuwe data</div></div>
+    <div class="step"><div class="step-num">4</div><div>Vergelijking met de <strong>vorige upload</strong> wordt automatisch gedaan &mdash; nieuwe bestellingen worden getoond in de tab &#8222;Nieuwe best.&#8220;</div></div>
+  </div>
+
+  <div class="up-grid">
+    <div class="up-card" id="card-bell"
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="dropFile(event,'bell')">
+      <span class="uc-icon">&#128203;</span>
+      <div class="uc-title">Bellijst (XLSX)</div>
+      <div class="uc-sub">
+        &#233;&#233;n bestand met tabbladen per maand<br>
+        <em>of</em> meerdere bestanden (1 per maand)<br><br>
+        Verwachte kolomnamen:<br>
+        <strong>Adviseur &bull; Waarde &bull; Besteld<br>Datum bellen &bull; Bel of mail &bull; Reden</strong>
+      </div>
+      <div class="uc-ok" id="bell-ok">&#10003; <span id="bell-name"></span></div>
+      <input type="file" id="inp-bell" accept=".xlsx,.xls" multiple onchange="handleFile(event,'bell')">
+    </div>
+    <div class="up-card" id="card-prov"
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="dropFile(event,'prov')">
+      <span class="uc-icon">&#128506;</span>
+      <div class="uc-title">Provincie-bestand (XLSX)</div>
+      <div class="uc-sub">
+        Kolom A = ordernummer<br>
+        Kolom B = provincie<br><br>
+        Tabbladen per maand:<br>
+        <strong>jan &bull; feb &bull; mrt &bull; apr</strong><br>
+        (optioneel &mdash; zonder dit geen provincie-data)
+      </div>
+      <div class="uc-ok" id="prov-ok">&#10003; <span id="prov-name"></span></div>
+      <input type="file" id="inp-prov" accept=".xlsx,.xls" onchange="handleFile(event,'prov')">
+    </div>
+  </div>
+
+  <div class="up-progress" id="upProgress"><div class="up-progress-fill" id="upFill"></div></div>
+  <div class="up-error" id="upError"></div>
+  <button class="btn-process" id="btnProcess" onclick="processUpload()" disabled>Verwerk bestanden &#8594;</button>
+  <div class="up-note">
+    Kevin wordt automatisch uitgefilterd &bull; Belgische provincies worden samengevoegd als &#8222;Belgi&#235;&#8220;<br>
+    De vorige data wordt bewaard voor vergelijking van nieuwe bestellingen
+  </div>
+</div>
+<div class="page active" id="page-ov">
+<div class="sec">KPI's &mdash; Q1 + April 2026 (excl. Kevin)</div>
+<div class="kg">
+<div class="kpi ka"><div class="klbl">Totaal ingemeten</div><div class="kval">1.876</div><div class="ksub">Jan t/m Apr</div></div>
+<div class="kpi ka"><div class="klbl">Totaal besteld</div><div class="kval">1.364</div><div class="ksub">van 1.876 metingen</div></div>
+<div class="kpi kg2"><div class="klbl">Conversie totaal</div><div class="kval">72.7%</div><div class="ksub">alle 4 maanden</div></div>
+<div class="kpi"><div class="klbl">Waarde ingemeten</div><div class="kval" style="font-size:19px">&euro;3.483.416</div><div class="ksub">Jan t/m Apr</div></div>
+<div class="kpi"><div class="klbl">Waarde besteld</div><div class="kval" style="font-size:19px">&euro;2.411.064</div><div class="ksub">Jan t/m Apr</div></div>
+<div class="kpi kr"><div class="klbl">April conversie</div><div class="kval" style="color:#e74c3c">65.1%</div><div class="ksub">&#9660; 10.3 ppt vs Q1 gem.</div></div>
+</div>
+<div class="ibox iwarn"><div class="it">&#9888;&#65039; April conversie daalt naar 65.1% &mdash; 10.3 ppt onder Q1 gemiddelde (75.4%)</div><p>Van 473 metingen zijn 165 niet besteld. Jeffrey scoort het sterkst in april, Torsten het laagst. Gerichte opvolging in mei is gewenst.</p></div>
+<div class="row2">
+<div class="card"><div class="ctitle">Conversie% per maand (stippellijn = Q1 gem. 75.4%)</div><div style="position:relative;height:230px"><canvas id="cConvBar"></canvas></div></div>
+<div class="card"><div class="ctitle">Waarde ingemeten vs besteld (&#8364;)</div><div class="leg"><span><span class="dot" style="background:#F9CD92"></span>Ingemeten</span><span><span class="dot" style="background:#F59901"></span>Besteld</span></div><div style="position:relative;height:230px"><canvas id="cWaarde"></canvas></div></div>
+</div>
+<div class="sec">Maandoverzicht</div>
+<div class="scr"><table><thead><tr><th>Maand</th><th>Ingemeten</th><th>Besteld</th><th>Niet best.</th><th>Conv%%</th><th>Waarde ing.</th><th>Waarde best.</th><th>Conv%%&#8364;</th></tr></thead><tbody>
+<tr><td>Januari</td><td>406</td><td>312</td><td>94</td><td><span class="pill pg">76.8%</span></td><td>&euro;749.006</td><td>&euro;557.056</td><td>74.4%</td></tr><tr><td>Februari</td><td>509</td><td>370</td><td>139</td><td><span class="pill po">72.7%</span></td><td>&euro;891.173</td><td>&euro;627.690</td><td>70.4%</td></tr><tr><td>Maart</td><td>488</td><td>374</td><td>114</td><td><span class="pill pg">76.6%</span></td><td>&euro;977.644</td><td>&euro;740.951</td><td>75.8%</td></tr><tr><td>April <span style="font-size:9px;background:#f3e5f5;color:#6a1b9a;padding:1px 5px;border-radius:10px;font-weight:700">NIEUW</span></td><td>473</td><td>308</td><td>165</td><td><span class="pill pa">65.1%</span></td><td>&euro;865.593</td><td>&euro;485.367</td><td>56.1%</td></tr>
+<tr class="tr-q1"><td>Q1 subtotaal</td><td>1403</td><td>1056</td><td>347</td><td><span class="pill pg">75.3%</span></td><td>&euro;2.617.823</td><td>&euro;1.925.697</td><td>73.6%</td></tr>
+<tr class="tr-tot"><td>Totaal</td><td>1876</td><td>1364</td><td>512</td><td><span class="pill po">72.7%</span></td><td>&euro;3.483.416</td><td>&euro;2.411.064</td><td>69.2%</td></tr>
+</tbody></table></div>
+</div>
+<div class="page" id="page-adv">
+<div class="sec">Conversie per adviseur &mdash; alle 4 maanden</div>
+<div class="row2"><div class="card full"><div class="ctitle">Conversie%% per adviseur per maand</div><div class="leg"><span><span class="dot" style="background:#F59901"></span>Jan</span><span><span class="dot" style="background:#2D2D2D"></span>Feb</span><span><span class="dot" style="background:#F9CD92"></span>Mrt</span><span><span class="dot" style="background:#ce93d8"></span>Apr</span></div><div style="position:relative;height:350px"><canvas id="cAdvConv"></canvas></div></div></div>
+<div class="sec">Detailtabel &mdash; conversie per adviseur</div>
+<div class="scr"><table><thead><tr><th>Adviseur</th><th>Jan ing.</th><th>Jan b.</th><th>Jan%</th><th>Feb ing.</th><th>Feb b.</th><th>Feb%</th><th>Mrt ing.</th><th>Mrt b.</th><th>Mrt%</th><th class="hp">Apr ing.</th><th class="hp">Apr b.</th><th class="hp">Apr%</th><th class="hb">Totaal</th><th class="hb">%</th></tr></thead><tbody><tr><td><strong>Cristian</strong></td><td>52</td><td>42</td><td><span class="pill pg">80.8%</span></td><td>72</td><td>59</td><td><span class="pill pg">81.9%</span></td><td>61</td><td>48</td><td><span class="pill pg">78.7%</span></td><td>60</td><td>41</td><td><span class="pill pg">68.3%</span></td><td>190/245</td><td><span class="pill pg">77.6%</span></td></tr>
+<tr><td><strong>Dennis</strong></td><td>42</td><td>36</td><td><span class="pill pg">85.7%</span></td><td>46</td><td>31</td><td><span class="pill po">67.4%</span></td><td>58</td><td>52</td><td><span class="pill pg">89.7%</span></td><td>48</td><td>31</td><td><span class="pill pr">64.6%</span></td><td>150/194</td><td><span class="pill pg">77.3%</span></td></tr>
+<tr><td><strong>Jeffrey</strong></td><td>18</td><td>13</td><td><span class="pill po">72.2%</span></td><td>56</td><td>41</td><td><span class="pill pg">73.2%</span></td><td>65</td><td>46</td><td><span class="pill po">70.8%</span></td><td>63</td><td>45</td><td><span class="pill pg">71.4%</span></td><td>145/202</td><td><span class="pill po">71.8%</span></td></tr>
+<tr><td><strong>Michel</strong></td><td>28</td><td>20</td><td><span class="pill po">71.4%</span></td><td>40</td><td>29</td><td><span class="pill po">72.5%</span></td><td>66</td><td>52</td><td><span class="pill pg">78.8%</span></td><td>62</td><td>42</td><td><span class="pill pg">67.7%</span></td><td>143/196</td><td><span class="pill po">73.0%</span></td></tr>
+<tr><td><strong>Peter</strong></td><td>51</td><td>38</td><td><span class="pill po">74.5%</span></td><td>55</td><td>40</td><td><span class="pill pg">72.7%</span></td><td>59</td><td>43</td><td><span class="pill po">72.9%</span></td><td>43</td><td>26</td><td><span class="pill pr">60.5%</span></td><td>147/208</td><td><span class="pill po">70.7%</span></td></tr>
+<tr><td><strong>Quinten</strong></td><td>48</td><td>34</td><td><span class="pill po">70.8%</span></td><td>59</td><td>42</td><td><span class="pill po">71.2%</span></td><td>63</td><td>45</td><td><span class="pill po">71.4%</span></td><td>43</td><td>28</td><td><span class="pill pg">65.1%</span></td><td>149/213</td><td><span class="pill po">70.0%</span></td></tr>
+<tr><td><strong>Ramon</strong></td><td>82</td><td>73</td><td><span class="pill pg">89.0%</span></td><td>80</td><td>63</td><td><span class="pill pg">78.8%</span></td><td>39</td><td>30</td><td><span class="pill pg">76.9%</span></td><td>43</td><td>29</td><td><span class="pill pg">67.4%</span></td><td>195/244</td><td><span class="pill pg">79.9%</span></td></tr>
+<tr><td><strong>Remco</strong></td><td>48</td><td>28</td><td><span class="pill pr">58.3%</span></td><td>50</td><td>37</td><td><span class="pill pg">74.0%</span></td><td>52</td><td>40</td><td><span class="pill pg">76.9%</span></td><td>72</td><td>46</td><td><span class="pill pr">63.9%</span></td><td>151/222</td><td><span class="pill po">68.0%</span></td></tr>
+<tr><td><strong>Torsten</strong></td><td>37</td><td>28</td><td><span class="pill po">75.7%</span></td><td>51</td><td>28</td><td><span class="pill pr">54.9%</span></td><td>25</td><td>18</td><td><span class="pill po">72.0%</span></td><td>39</td><td>20</td><td><span class="pill pr">51.3%</span></td><td>94/152</td><td><span class="pill pr">61.8%</span></td></tr>
+<tr class="tr-avg"><td><strong>Team gem.</strong></td><td>406</td><td>312</td><td><span class="pill pd">76.8%</span></td><td>509</td><td>370</td><td><span class="pill pd">72.7%</span></td><td>488</td><td>374</td><td><span class="pill pd">76.6%</span></td><td>473</td><td>308</td><td><span class="pill pd">65.1%</span></td><td>1364/1876</td><td><span class="pill pd">72.7%</span></td></tr>
+</tbody></table></div>
+<div class="sec">Gemiddelden per maand</div>
+<div class="scr"><table><thead><tr><th>Maand</th><th>Team gem.</th><th>Hoogst</th><th>Laagst</th><th>Spreiding</th></tr></thead><tbody>
+<tr><td>Januari</td><td><span class="pill pg">76.8%</span></td><td>Ramon 89.0%</td><td>Remco 58.3%</td><td>30.7 ppt</td></tr>
+<tr><td>Februari</td><td><span class="pill po">72.7%</span></td><td>Cristian 81.9%</td><td>Torsten 54.9%</td><td>27.0 ppt</td></tr>
+<tr><td>Maart</td><td><span class="pill pg">76.6%</span></td><td>Dennis 89.7%</td><td>Jeffrey 70.8%</td><td>18.9 ppt</td></tr>
+<tr><td>April</td><td><span class="pill pa">65.1%</span></td><td>Jeffrey 71.4%</td><td>Torsten 51.3%</td><td>20.1 ppt</td></tr>
+</tbody></table></div>
+<div class="sec" style="margin-top:16px">Inmeet waarde per adviseur (&#8364;)</div>
+<div class="row2"><div class="card full"><div class="ctitle">Ingemeten waarde per adviseur per maand</div><div class="leg"><span><span class="dot" style="background:#F59901"></span>Jan</span><span><span class="dot" style="background:#2D2D2D"></span>Feb</span><span><span class="dot" style="background:#F9CD92"></span>Mrt</span><span><span class="dot" style="background:#ce93d8"></span>Apr</span></div><div style="position:relative;height:310px"><canvas id="cAdvWaarde"></canvas></div></div></div>
+</div>
+<div class="page" id="page-prov">
+<div class="sec">Provincie &mdash; selecteer periode</div>
+<div class="mbbar">
+<button class="mb" onclick="selProv('Januari',this)">Januari</button>
+<button class="mb" onclick="selProv('Februari',this)">Februari</button>
+<button class="mb" onclick="selProv('Maart',this)">Maart</button>
+<button class="mb" onclick="selProv('April',this)">April</button>
+<button class="mb active" onclick="selProv('Totaal',this)">Q1+Apr Totaal</button>
+</div>
+<div class="row2"><div class="card full"><div class="ctitle" id="ptitle">Conversie %% &mdash; Q1+Apr Totaal</div><div style="position:relative;" id="pwrap"><canvas id="cProv"></canvas></div></div></div>
+<div class="row2"><div class="card full"><div class="ctitle" id="pvtitle">Volume &mdash; Q1+Apr Totaal</div><div class="leg"><span><span class="dot" style="background:#F9CD92"></span>Ingemeten</span><span><span class="dot" style="background:#F59901"></span>Besteld</span></div><div style="position:relative;height:380px"><canvas id="cProvVol"></canvas></div></div></div>
+<div class="scr"><table><thead><tr><th>Provincie</th><th>Ingemeten</th><th>Besteld</th><th>Niet besteld</th><th>Conversie</th></tr></thead><tbody id="provtb"></tbody></table></div>
+</div>
+<div class="page" id="page-regio">
+<div class="sec">Heatmap &mdash; adviseur per provincie (Q1+Apr totaal)</div>
+<p style="font-size:11px;color:#999;margin-bottom:11px">Groen &#8805;85%% &bull; Lichtgroen &#8805;75%% &bull; Oranje &#8805;65%% &bull; Rood &lt;65%% &bull; &mdash; = &lt;3 metingen</p>
+<div class="scr"><table><thead><tr><th>Provincie</th><th>Totaal</th><th>Cristian</th><th>Dennis</th><th>Jeffrey</th><th>Michel</th><th>Peter</th><th>Quinten</th><th>Ramon</th><th>Remco</th><th>Torsten</th></tr></thead><tbody><tr><td><strong>Overijssel</strong></td><td><span class="pill po">77.8%</span><br><small>309/397</small></td><td style="background:#27ae6022;text-align:center"><strong style="color:#27ae60">91.7%</strong><br><small>11/12</small></td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">77.6%</strong><br><small>76/98</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">72.6%</strong><br><small>61/84</small></td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">84.6%</strong><br><small>11/13</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">81.8%</strong><br><small>135/165</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">56.5%</strong><br><small>13/23</small></td></tr>
+<tr><td><strong>Zuid-Holland</strong></td><td><span class="pill po">71.6%</span><br><small>184/257</small></td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">79.2%</strong><br><small>57/72</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">55.6%</strong><br><small>10/18</small></td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">70.8%</strong><br><small>75/106</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">65.0%</strong><br><small>13/20</small></td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">70.7%</strong><br><small>29/41</small></td></tr>
+<tr><td><strong>Noord-Holland</strong></td><td><span class="pill pr">66.4%</span><br><small>150/226</small></td><td style="background:#27ae6022;text-align:center"><strong style="color:#27ae60">100.0%</strong><br><small>4/4</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">75.0%</strong><br><small>3/4</small></td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">42.9%</strong><br><small>6/14</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">68.2%</strong><br><small>107/157</small></td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">62.2%</strong><br><small>28/45</small></td></tr>
+<tr><td><strong>Noord-Brabant</strong></td><td><span class="pill po">75.6%</span><br><small>164/217</small></td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">75.9%</strong><br><small>41/54</small></td><td style="background:#27ae6022;text-align:center"><strong style="color:#27ae60">85.7%</strong><br><small>6/7</small></td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">76.2%</strong><br><small>32/42</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">78.4%</strong><br><small>40/51</small></td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">71.7%</strong><br><small>43/60</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">66.7%</strong><br><small>2/3</small></td><td style="color:#ddd;text-align:center">&mdash;</td></tr>
+<tr><td><strong>Gelderland</strong></td><td><span class="pill po">71.6%</span><br><small>141/197</small></td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">75.0%</strong><br><small>15/20</small></td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">78.1%</strong><br><small>50/64</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">73.3%</strong><br><small>11/15</small></td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">67.2%</strong><br><small>41/61</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">72.2%</strong><br><small>13/18</small></td><td style="background:#27ae6022;text-align:center"><strong style="color:#27ae60">100.0%</strong><br><small>8/8</small></td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">22.2%</strong><br><small>2/9</small></td></tr>
+<tr><td><strong>Utrecht</strong></td><td><span class="pill po">73.6%</span><br><small>103/140</small></td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">77.8%</strong><br><small>49/63</small></td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">55.6%</strong><br><small>5/9</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">74.3%</strong><br><small>26/35</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">72.7%</strong><br><small>8/11</small></td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">68.4%</strong><br><small>13/19</small></td></tr>
+<tr><td><strong>België</strong></td><td><span class="pill pr">68.5%</span><br><small>61/89</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">66.2%</strong><br><small>51/77</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">83.3%</strong><br><small>10/12</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td></tr>
+<tr><td><strong>Limburg</strong></td><td><span class="pill po">76.9%</span><br><small>60/78</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">66.7%</strong><br><small>2/3</small></td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">76.8%</strong><br><small>53/69</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">83.3%</strong><br><small>5/6</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td></tr>
+<tr><td><strong>Flevoland</strong></td><td><span class="pill pr">59.1%</span><br><small>26/44</small></td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">33.3%</strong><br><small>1/3</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">63.2%</strong><br><small>12/19</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">53.3%</strong><br><small>8/15</small></td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">66.7%</strong><br><small>4/6</small></td></tr>
+<tr><td><strong>Groningen</strong></td><td><span class="pill pg">89.5%</span><br><small>34/38</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#27ae6022;text-align:center"><strong style="color:#27ae60">88.2%</strong><br><small>15/17</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#27ae6022;text-align:center"><strong style="color:#27ae60">90.5%</strong><br><small>19/21</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td></tr>
+<tr><td><strong>Drenthe</strong></td><td><span class="pill po">75.8%</span><br><small>25/33</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">70.0%</strong><br><small>7/10</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">77.3%</strong><br><small>17/22</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td></tr>
+<tr><td><strong>Frysl√¢n</strong></td><td><span class="pill pg">80.0%</span><br><small>24/30</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">80.0%</strong><br><small>16/20</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#8bc34a22;text-align:center"><strong style="color:#8bc34a">75.0%</strong><br><small>6/8</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td></tr>
+<tr><td><strong>Zeeland</strong></td><td><span class="pill pr">68.4%</span><br><small>13/19</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">68.4%</strong><br><small>13/19</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td></tr>
+<tr><td><strong>Fryslân</strong></td><td><span class="pill pr">62.5%</span><br><small>10/16</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ff980022;text-align:center"><strong style="color:#ff9800">66.7%</strong><br><small>8/12</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td><td style="background:#ef535022;text-align:center"><strong style="color:#ef5350">50.0%</strong><br><small>2/4</small></td><td style="color:#ddd;text-align:center">&mdash;</td><td style="color:#ddd;text-align:center">&mdash;</td></tr>
+</tbody></table></div>
+<div class="sec" style="margin-top:20px">Conclusies</div>
+<div class="ig">
+<div class="ibox igood"><div class="it">Ramon &mdash; dominant in Overijssel (Q1 85%%+)</div><p>Structureel hoogste score in Overijssel. Zijn aanpak is de benchmark voor de regio.</p></div>
+<div class="ibox igood"><div class="it">Jeffrey &mdash; sterkste april prestatie en best in Limburg + Belgi&#235;</div><p>Jeffrey houdt zijn niveau het best vast in april. In Limburg structureel boven 75%%.</p></div>
+<div class="ibox iwarn"><div class="it">Torsten &mdash; laagste totaalconversie en hardste april-dip</div><p>Dips in Gelderland (feb 28,6%%) en Overijssel (feb 45,5%%). Coaching gewenst.</p></div>
+<div class="ibox iwarn"><div class="it">Noord-Holland &mdash; consequent laagst scorend (65&ndash;68%%)</div><p>Remco, Peter en Torsten rijden hier, allen onder eigen gemiddelde.</p></div>
+</div>
+</div>
+<div class="page" id="page-nab">
+<div class="sec">Nabellen &mdash; Q1 + April overzicht</div>
+<div class="kg">
+<div class="kpi ka"><div class="klbl">Januari conv.</div><div class="kval">42.9%</div><div class="ksub">39/91 benaderd</div></div>
+<div class="kpi ka"><div class="klbl">Februari conv.</div><div class="kval">34.4%</div><div class="ksub">52/151 benaderd</div></div>
+<div class="kpi ka"><div class="klbl">Maart conv.</div><div class="kval">38.5%</div><div class="ksub">52/135 benaderd</div></div>
+<div class="kpi kp"><div class="klbl">April conv.</div><div class="kval">11.1%</div><div class="ksub">8/72 benaderd</div></div>
+</div>
+<div class="ibox" style="margin-bottom:14px"><div class="it">&#8505;&#65039; April nabellen staat in beginfase</div><p>De april metingen zijn recent gedaan &mdash; het nabellen loopt door in mei. Verwacht hogere conversies bij de volgende upload.</p></div>
+<div class="row2">
+<div class="card"><div class="ctitle">Nabellen conversie%% per maand</div><div style="position:relative;height:230px"><canvas id="cNab"></canvas></div></div>
+<div class="card"><div class="ctitle">Redenen geen bestelling &mdash; Q1+Apr totaal</div><div style="position:relative;height:230px"><canvas id="cReden"></canvas></div></div>
+</div>
+<div class="sec">Nabellen per maand</div>
+<div class="scr"><table><thead><tr><th>Maand</th><th>Benaderd</th><th>Besteld na contact</th><th>Niet besteld</th><th>Conv%</th><th>Via mail</th><th>Via bellen</th></tr></thead><tbody><tr><td>Januari</td><td>91</td><td>39</td><td>52</td><td><span class="pill pg">42.9%</span></td><td>55</td><td>39</td></tr>
+<tr><td>Februari</td><td>151</td><td>52</td><td>99</td><td><span class="pill po">34.4%</span></td><td>136</td><td>49</td></tr>
+<tr><td>Maart</td><td>135</td><td>52</td><td>83</td><td><span class="pill pg">38.5%</span></td><td>128</td><td>47</td></tr>
+<tr><td>April</td><td>72</td><td>8</td><td>64</td><td><span class="pill pr">11.1%</span></td><td>76</td><td>17</td></tr>
+</tbody></table></div>
+<div class="sec">Redenen per maand</div>
+<div class="scr"><table><thead><tr><th>Reden</th><th>Jan</th><th>Feb</th><th>Mrt</th><th class="hp">Apr</th><th>Totaal</th></tr></thead><tbody><tr><td>Geen gehoor</td><td>20</td><td>55</td><td>28</td><td>31</td><td><strong>134</strong></td></tr>
+<tr><td>Is er nog mee bezig</td><td>16</td><td>19</td><td>27</td><td>20</td><td><strong>82</strong></td></tr>
+<tr><td>Ziet ervan af</td><td>3</td><td>7</td><td>14</td><td>3</td><td><strong>27</strong></td></tr>
+<tr><td>Overig (reden plaatsen in blad 'redenen')</td><td>3</td><td>5</td><td>7</td><td>4</td><td><strong>19</strong></td></tr>
+<tr><td>Gaat bestellen</td><td>3</td><td>2</td><td>1</td><td>2</td><td><strong>8</strong></td></tr>
+<tr><td>Wacht op korting</td><td>2</td><td>3</td><td>1</td><td>1</td><td><strong>7</strong></td></tr>
+<tr><td>Elders goedkoper</td><td>1</td><td>2</td><td>3</td><td>0</td><td><strong>6</strong></td></tr>
+<tr><td>Nogmaals meten</td><td>1</td><td>2</td><td>1</td><td>1</td><td><strong>5</strong></td></tr>
+<tr><td>Service</td><td>2</td><td>2</td><td>0</td><td>0</td><td><strong>4</strong></td></tr>
+<tr><td>Uitstel vanwege andere prioriteiten</td><td>1</td><td>0</td><td>0</td><td>2</td><td><strong>3</strong></td></tr>
+<tr><td>Niet kunnen leveren wat de klant wil</td><td>0</td><td>1</td><td>0</td><td>0</td><td><strong>1</strong></td></tr>
+<tr><td>Technisch (lege winkelwagen/ niet inloggen/ contact)</td><td>0</td><td>0</td><td>1</td><td>0</td><td><strong>1</strong></td></tr>
+</tbody></table></div>
+</div>
+<div class="page" id="page-apr">
+<div class="sec spu">April 2026 &mdash; volledig detail</div>
+<div class="kg">
+<div class="kpi kp"><div class="klbl">Ingemeten</div><div class="kval">473</div><div class="ksub">April 2026</div></div>
+<div class="kpi kp"><div class="klbl">Besteld</div><div class="kval">308</div><div class="ksub">van 473 metingen</div></div>
+<div class="kpi kr"><div class="klbl">Conversie</div><div class="kval" style="color:#e74c3c">65.1%</div><div class="ksub">&#9660; 10.3 ppt vs Q1 gem.</div></div>
+<div class="kpi"><div class="klbl">Waarde ingemeten</div><div class="kval" style="font-size:19px">&euro;865.593</div></div>
+<div class="kpi"><div class="klbl">Waarde besteld</div><div class="kval" style="font-size:19px">&euro;485.367</div></div>
+<div class="kpi"><div class="klbl">Conv% waarde</div><div class="kval">56.1%</div></div>
+</div>
+<div class="row2">
+<div class="card"><div class="ctitle">Adviseurs april &mdash; conv%% vs Q1 gem.</div><div style="position:relative;height:260px"><canvas id="cAprAdv"></canvas></div></div>
+<div class="card"><div class="ctitle">Provincie conversie &mdash; April</div><div style="position:relative;" id="apwrap"><canvas id="cAprProv"></canvas></div></div>
+</div>
+<div class="sec spu">Per adviseur &mdash; April</div>
+<div class="scr"><table><thead><tr><th>Adviseur</th><th>Ing.</th><th>Best.</th><th>Niet</th><th>Conv%%</th><th>Waarde ing.</th><th>Waarde best.</th><th>vs Q1 gem.</th></tr></thead><tbody>
+<tr><td><strong>Cristian</strong></td><td>60</td><td>41</td><td>19</td><td><span class="pill po">68.3%</span></td><td>&euro;110.748</td><td>&euro;71.929</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-12.2%</span></td></tr>
+<tr><td><strong>Dennis</strong></td><td>48</td><td>31</td><td>17</td><td><span class="pill po">64.6%</span></td><td>&euro;114.727</td><td>&euro;56.077</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-16.3%</span></td></tr>
+<tr><td><strong>Jeffrey</strong></td><td>63</td><td>45</td><td>18</td><td><span class="pill pg">71.4%</span></td><td>&euro;85.201</td><td>&euro;50.832</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-0.7%</span></td></tr>
+<tr><td><strong>Michel</strong></td><td>62</td><td>42</td><td>20</td><td><span class="pill po">67.7%</span></td><td>&euro;123.210</td><td>&euro;78.156</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-6.5%</span></td></tr>
+<tr><td><strong>Peter</strong></td><td>43</td><td>26</td><td>17</td><td><span class="pill po">60.5%</span></td><td>&euro;75.119</td><td>&euro;41.188</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-12.9%</span></td></tr>
+<tr><td><strong>Quinten</strong></td><td>43</td><td>28</td><td>15</td><td><span class="pill po">65.1%</span></td><td>&euro;73.255</td><td>&euro;44.905</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-6.0%</span></td></tr>
+<tr><td><strong>Ramon</strong></td><td>43</td><td>29</td><td>14</td><td><span class="pill po">67.4%</span></td><td>&euro;69.496</td><td>&euro;44.516</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-14.2%</span></td></tr>
+<tr><td><strong>Remco</strong></td><td>72</td><td>46</td><td>26</td><td><span class="pill po">63.9%</span></td><td>&euro;137.871</td><td>&euro;74.388</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-5.8%</span></td></tr>
+<tr><td><strong>Torsten</strong></td><td>39</td><td>20</td><td>19</td><td><span class="pill pr">51.3%</span></td><td>&euro;75.966</td><td>&euro;23.376</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-16.2%</span></td></tr>
+
+<tr class="tr-tot"><td>Totaal</td><td>473</td><td>308</td><td>165</td><td><span class="pill pa">65.1%</span></td><td>&euro;865.593</td><td>&euro;485.367</td><td><span style="color:#e74c3c;font-size:11px;font-weight:700">-10.3%</span></td></tr>
+</tbody></table></div>
+<div class="sec spu">Provincie &mdash; April</div>
+<div class="scr"><table><thead><tr><th>Provincie</th><th>Ingemeten</th><th>Besteld</th><th>Niet besteld</th><th>Conversie</th></tr></thead><tbody><tr><td><strong>Overijssel</strong></td><td>107</td><td>74</td><td>33</td><td><span class="pill po">69.2%</span></td></tr>
+<tr><td><strong>Noord-Holland</strong></td><td>61</td><td>38</td><td>23</td><td><span class="pill pr">62.3%</span></td></tr>
+<tr><td><strong>Zuid-Holland</strong></td><td>54</td><td>31</td><td>23</td><td><span class="pill pr">57.4%</span></td></tr>
+<tr><td><strong>Gelderland</strong></td><td>38</td><td>25</td><td>13</td><td><span class="pill po">65.8%</span></td></tr>
+<tr><td><strong>Noord-Brabant</strong></td><td>37</td><td>26</td><td>11</td><td><span class="pill po">70.3%</span></td></tr>
+<tr><td><strong>Utrecht</strong></td><td>35</td><td>27</td><td>8</td><td><span class="pill pg">77.1%</span></td></tr>
+<tr><td><strong>Limburg</strong></td><td>29</td><td>23</td><td>6</td><td><span class="pill pg">79.3%</span></td></tr>
+<tr><td><strong>België</strong></td><td>23</td><td>14</td><td>9</td><td><span class="pill pr">60.9%</span></td></tr>
+<tr><td><strong>Flevoland</strong></td><td>16</td><td>8</td><td>8</td><td><span class="pill pr">50.0%</span></td></tr>
+<tr><td><strong>Fryslân</strong></td><td>15</td><td>9</td><td>6</td><td><span class="pill pr">60.0%</span></td></tr>
+<tr><td><strong>Drenthe</strong></td><td>13</td><td>9</td><td>4</td><td><span class="pill po">69.2%</span></td></tr>
+<tr><td><strong>Groningen</strong></td><td>10</td><td>7</td><td>3</td><td><span class="pill po">70.0%</span></td></tr>
+<tr><td><strong>Zeeland</strong></td><td>5</td><td>3</td><td>2</td><td><span class="pill pr">60.0%</span></td></tr>
+<tr><td><strong>nan</strong></td><td>2</td><td>1</td><td>1</td><td><span class="pill pr">50.0%</span></td></tr>
+<tr><td><strong>Région flamande</strong></td><td>1</td><td>1</td><td>0</td><td><span class="pill pg">100.0%</span></td></tr>
+</tbody></table></div>
+</div>
+<div class="page" id="page-nc">
+<div class="ncb"><div class="ico">&#128338;</div><div class="txt"><strong>9 nieuwe bestellingen gedetecteerd t.o.v. vorige meting</strong>Klanten in Q1 die eerder NIET hadden besteld en nu WEL &mdash; puur door actief opvolgen.<br>Extra omzet: <strong>&euro;20.525</strong> &nbsp;&middot;&nbsp; Via mail: <strong>7x</strong> &nbsp;&middot;&nbsp; Via bellen: <strong>2x</strong></div></div>
+<div class="kg">
+<div class="kpi kb"><div class="klbl">Nieuwe bestellingen</div><div class="kval" style="color:#1565c0">9</div><div class="ksub">t.o.v. vorige meting</div></div>
+<div class="kpi kb"><div class="klbl">Extra omzet</div><div class="kval" style="font-size:19px">&euro;20.525</div></div>
+<div class="kpi kg2"><div class="klbl">Via mail</div><div class="kval">7x</div><div class="ksub">78% van conversies</div></div>
+<div class="kpi kg2"><div class="klbl">Via bellen</div><div class="kval">2x</div><div class="ksub">22% van conversies</div></div>
+</div>
+<div class="ibox ibl"><div class="it">&#128231; Mail meest effectief (78%%) &mdash; alle 9 conversies via actief contact</div><p>Niemand bestelde spontaan. Dit bewijst de directe waarde van het nabelsysteem. Upload een bijgewerkte bellijst via het tabblad <strong>&#8222;Nieuw bestand uploaden&#8220;</strong> om nieuwe vergelijkingen te zien.</p></div>
+<div class="sec sbl">Detectiemethode</div>
+<div style="background:#fff;border:1px solid #eee;border-radius:9px;padding:12px 16px;margin-bottom:18px;font-size:12px;line-height:1.8;color:#555">Per order in Q1 is kolom <strong>Besteld</strong> vergeleken tussen de <strong>vorige meting</strong> (originele bellijst) en de <strong>huidige meting</strong>. Orders waarbij Besteld leeg was en nu gevuld is = nieuwe bestelling. Kolom <strong>Bel of mail</strong> toont het contactkanaal.</div>
+<div class="sec sbl">Alle nieuwe bestellingen</div>
+<div class="scr"><table><thead><tr><th class="hb">Klant</th><th class="hb">Maand</th><th class="hb">Adviseur</th><th class="hb">Waarde</th><th class="hb">Via</th><th class="hb">Vorige reden</th></tr></thead><tbody><tr><td><strong>Danny Scholing</strong></td><td>Januari</td><td>Ramon</td><td>&euro;2.926</td><td><span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128231; Mail</span></td><td style="color:#666;font-size:11px">Is er nog mee bezig</td></tr>
+<tr><td><strong>Petra Krudde</strong></td><td>Februari</td><td>Torsten</td><td>&euro;2.713</td><td><span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128231; Mail</span></td><td style="color:#666;font-size:11px">Geen gehoor</td></tr>
+<tr><td><strong>Martijn Visser</strong></td><td>Februari</td><td>Ramon</td><td>&euro;1.627</td><td><span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128231; Mail</span></td><td style="color:#666;font-size:11px">Geen gehoor</td></tr>
+<tr><td><strong>Melanie De Graaf</strong></td><td>Maart</td><td>Torsten</td><td>&euro;4.457</td><td><span style="background:#e8f5e9;color:#1b5e20;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128222; Bellen</span></td><td style="color:#666;font-size:11px">Geen gehoor</td></tr>
+<tr><td><strong>Olaf Corduwener</strong></td><td>Maart</td><td>Jeffrey</td><td>&euro;4.230</td><td><span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128231; Mail</span></td><td style="color:#666;font-size:11px">&mdash;</td></tr>
+<tr><td><strong>Anneke Rietman</strong></td><td>Maart</td><td>Cristian</td><td>&euro;1.361</td><td><span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128231; Mail</span></td><td style="color:#666;font-size:11px">Geen gehoor</td></tr>
+<tr><td><strong>Asli Akyol</strong></td><td>Maart</td><td>Remco</td><td>&euro;1.135</td><td><span style="background:#e8f5e9;color:#1b5e20;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128222; Bellen</span></td><td style="color:#666;font-size:11px">Overig (reden plaatsen in blad 'redenen')</td></tr>
+<tr><td><strong>Ingeborg Bloem</strong></td><td>Maart</td><td>Remco</td><td>&euro;1.490</td><td><span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128231; Mail</span></td><td style="color:#666;font-size:11px">Is er nog mee bezig</td></tr>
+<tr><td><strong>Eline Kleinman</strong></td><td>Maart</td><td>Michel</td><td>&euro;585</td><td><span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128231; Mail</span></td><td style="color:#666;font-size:11px">&mdash;</td></tr>
+<tr style="background:#e3f2fd;font-weight:700;border-top:2px solid #1565c0"><td colspan="3">Totaal</td><td>&euro;20.525</td><td>&#128231; 7x mail &nbsp; &#128222; 2x bellen</td><td></td></tr></tbody></table></div>
+<div class="row2">
+<div class="card"><div class="ctitle">Mail vs bellen</div><div style="position:relative;height:220px"><canvas id="cNcMeth"></canvas></div></div>
+<div class="card"><div class="ctitle">Nieuwe best. per maand</div><div style="position:relative;height:220px"><canvas id="cNcMnd"></canvas></div></div>
+</div>
+<div class="sec sbl">Per adviseur</div>
+<div class="scr"><table><thead><tr><th class="hb">Adviseur</th><th class="hb">Nieuwe best.</th><th class="hb">Extra waarde</th><th class="hb">Via mail</th><th class="hb">Via bellen</th></tr></thead><tbody><tr><td><strong>Ramon</strong></td><td>2</td><td>&euro;4.553</td><td>&#128231; 2</td><td>&mdash;</td></tr>
+<tr><td><strong>Torsten</strong></td><td>2</td><td>&euro;7.170</td><td>&#128231; 1</td><td>&#128222; 1</td></tr>
+<tr><td><strong>Remco</strong></td><td>2</td><td>&euro;2.625</td><td>&#128231; 1</td><td>&#128222; 1</td></tr>
+<tr><td><strong>Jeffrey</strong></td><td>1</td><td>&euro;4.230</td><td>&#128231; 1</td><td>&mdash;</td></tr>
+<tr><td><strong>Cristian</strong></td><td>1</td><td>&euro;1.361</td><td>&#128231; 1</td><td>&mdash;</td></tr>
+<tr><td><strong>Michel</strong></td><td>1</td><td>&euro;585</td><td>&#128231; 1</td><td>&mdash;</td></tr>
+</tbody></table></div>
+</div>
+<script>
+var M=["Januari", "Februari", "Maart", "April"];
+var AN=["Cristian", "Dennis", "Jeffrey", "Michel", "Peter", "Quinten", "Ramon", "Remco", "Torsten"];
+var MD={"Januari": {"n": 406, "b": 312, "niet": 94, "conv": 76.8, "wi": 749006, "wb": 557056, "cwi": 74.4, "nr": 91, "nb": 39, "nc": 42.9, "red": {"Geen gehoor": 20, "Is er nog mee bezig": 16, "Ziet ervan af": 3, "Overig (reden plaatsen in blad 'redenen')": 3, "Gaat bestellen": 3, "Service": 2, "Wacht op korting": 2, "Elders goedkoper": 1, "Uitstel vanwege andere prioriteiten": 1, "Nogmaals meten": 1}, "bom": {"Mail": 55, "Bellen": 39}}, "Februari": {"n": 509, "b": 370, "niet": 139, "conv": 72.7, "wi": 891173, "wb": 627690, "cwi": 70.4, "nr": 151, "nb": 52, "nc": 34.4, "red": {"Geen gehoor": 55, "Is er nog mee bezig": 19, "Ziet ervan af": 7, "Overig (reden plaatsen in blad 'redenen')": 5, "Wacht op korting": 3, "Nogmaals meten": 2, "Gaat bestellen": 2, "Service": 2, "Elders goedkoper": 2, "Niet kunnen leveren wat de klant wil": 1}, "bom": {"Mail": 136, "Bellen": 49}}, "Maart": {"n": 488, "b": 374, "niet": 114, "conv": 76.6, "wi": 977644, "wb": 740951, "cwi": 75.8, "nr": 135, "nb": 52, "nc": 38.5, "red": {"Geen gehoor": 28, "Is er nog mee bezig": 27, "Ziet ervan af": 14, "Overig (reden plaatsen in blad 'redenen')": 7, "Elders goedkoper": 3, "Gaat bestellen": 1, "Nogmaals meten": 1, "Wacht op korting": 1, "Technisch (lege winkelwagen/ niet inloggen/ contact)": 1}, "bom": {"Mail": 128, "Bellen": 47}}, "April": {"n": 473, "b": 308, "niet": 165, "conv": 65.1, "wi": 865593, "wb": 485367, "cwi": 56.1, "nr": 72, "nb": 8, "nc": 11.1, "red": {"Geen gehoor": 31, "Is er nog mee bezig": 20, "Overig (reden plaatsen in blad 'redenen')": 4, "Ziet ervan af": 3, "Gaat bestellen": 2, "Uitstel vanwege andere prioriteiten": 2, "Wacht op korting": 1, "Nogmaals meten": 1}, "bom": {"Mail": 76, "Bellen": 17}}};
+var AD={"Cristian": {"Januari": {"n": 52, "b": 42, "niet": 10, "conv": 80.8, "wi": 88840, "wb": 77926, "cwi": 87.7, "nr": 16, "nb": 9, "nc": 56.2, "prov": {"Gelderland": {"n": 6, "b": 5, "c": 83.3}, "Noord-Brabant": {"n": 2, "b": 1, "c": 50.0}, "Overijssel": {"n": 2, "b": 2, "c": 100.0}, "Utrecht": {"n": 22, "b": 17, "c": 77.3}, "Zuid-Holland": {"n": 17, "b": 14, "c": 82.4}}}, "Februari": {"n": 72, "b": 59, "niet": 13, "conv": 81.9, "wi": 122725, "wb": 100244, "cwi": 81.7, "nr": 19, "nb": 10, "nc": 52.6, "prov": {"Gelderland": {"n": 5, "b": 3, "c": 60.0}, "Noord-Brabant": {"n": 22, "b": 17, "c": 77.3}, "Utrecht": {"n": 15, "b": 11, "c": 73.3}, "Zuid-Holland": {"n": 25, "b": 23, "c": 92.0}}}, "Maart": {"n": 61, "b": 48, "niet": 13, "conv": 78.7, "wi": 106942, "wb": 88336, "cwi": 82.6, "nr": 16, "nb": 7, "nc": 43.8, "prov": {"Gelderland": {"n": 2, "b": 2, "c": 100.0}, "Noord-Brabant": {"n": 14, "b": 10, "c": 71.4}, "Overijssel": {"n": 3, "b": 3, "c": 100.0}, "Utrecht": {"n": 15, "b": 12, "c": 80.0}, "Zuid-Holland": {"n": 22, "b": 17, "c": 77.3}}}, "April": {"n": 60, "b": 41, "niet": 19, "conv": 68.3, "wi": 110748, "wb": 71929, "cwi": 64.9, "nr": 10, "nb": 1, "nc": 10.0, "prov": {"Flevoland": {"n": 3, "b": 1, "c": 33.3}, "Gelderland": {"n": 7, "b": 5, "c": 71.4}, "Noord-Brabant": {"n": 16, "b": 13, "c": 81.2}, "Noord-Holland": {"n": 4, "b": 4, "c": 100.0}, "Overijssel": {"n": 7, "b": 6, "c": 85.7}, "Utrecht": {"n": 11, "b": 9, "c": 81.8}, "Zuid-Holland": {"n": 8, "b": 3, "c": 37.5}}}}, "Dennis": {"Januari": {"n": 42, "b": 36, "niet": 6, "conv": 85.7, "wi": 83355, "wb": 60802, "cwi": 72.9, "nr": 8, "nb": 3, "nc": 37.5, "prov": {"Gelderland": {"n": 16, "b": 14, "c": 87.5}, "Limburg": {"n": 1, "b": 1, "c": 100.0}, "Noord-Brabant": {"n": 4, "b": 4, "c": 100.0}, "Overijssel": {"n": 16, "b": 12, "c": 75.0}, "Utrecht": {"n": 1, "b": 1, "c": 100.0}}}, "Februari": {"n": 46, "b": 31, "niet": 15, "conv": 67.4, "wi": 78883, "wb": 51594, "cwi": 65.4, "nr": 10, "nb": 3, "nc": 30.0, "prov": {"Flevoland": {"n": 1, "b": 1, "c": 100.0}, "Gelderland": {"n": 17, "b": 11, "c": 64.7}, "Limburg": {"n": 2, "b": 1, "c": 50.0}, "Noord-Brabant": {"n": 3, "b": 2, "c": 66.7}, "Overijssel": {"n": 16, "b": 13, "c": 81.2}, "Utrecht": {"n": 5, "b": 2, "c": 40.0}}}, "Maart": {"n": 58, "b": 52, "niet": 6, "conv": 89.7, "wi": 111819, "wb": 103641, "cwi": 92.7, "nr": 11, "nb": 7, "nc": 63.6, "prov": {"Gelderland": {"n": 21, "b": 19, "c": 90.5}, "Overijssel": {"n": 34, "b": 31, "c": 91.2}}}, "April": {"n": 48, "b": 31, "niet": 17, "conv": 64.6, "wi": 114727, "wb": 56077, "cwi": 48.9, "nr": 11, "nb": 3, "nc": 27.3, "prov": {"Gelderland": {"n": 10, "b": 6, "c": 60.0}, "Noord-Holland": {"n": 2, "b": 2, "c": 100.0}, "Overijssel": {"n": 32, "b": 20, "c": 62.5}, "Utrecht": {"n": 3, "b": 2, "c": 66.7}}}}, "Jeffrey": {"Januari": {"n": 18, "b": 13, "niet": 5, "conv": 72.2, "wi": 35490, "wb": 20097, "cwi": 56.6, "nr": 3, "nb": 0, "nc": 0.0, "prov": {"België": {"n": 5, "b": 3, "c": 60.0}, "Limburg": {"n": 6, "b": 5, "c": 83.3}, "Noord-Brabant": {"n": 4, "b": 4, "c": 100.0}}}, "Februari": {"n": 56, "b": 41, "niet": 15, "conv": 73.2, "wi": 104847, "wb": 68357, "cwi": 65.2, "nr": 20, "nb": 7, "nc": 35.0, "prov": {"België": {"n": 21, "b": 15, "c": 71.4}, "Gelderland": {"n": 1, "b": 0, "c": 0.0}, "Limburg": {"n": 21, "b": 16, "c": 76.2}, "Noord-Brabant": {"n": 11, "b": 9, "c": 81.8}, "Provincie Antwerpen": {"n": 1, "b": 1, "c": 100.0}}}, "Maart": {"n": 65, "b": 46, "niet": 19, "conv": 70.8, "wi": 137477, "wb": 100756, "cwi": 73.3, "nr": 18, "nb": 5, "nc": 27.8, "prov": {"België": {"n": 30, "b": 21, "c": 70.0}, "Limburg": {"n": 14, "b": 9, "c": 64.3}, "Noord-Brabant": {"n": 21, "b": 16, "c": 76.2}}}, "April": {"n": 63, "b": 45, "niet": 18, "conv": 71.4, "wi": 85201, "wb": 50832, "cwi": 59.7, "nr": 6, "nb": 0, "nc": 0.0, "prov": {"België": {"n": 21, "b": 12, "c": 57.1}, "Gelderland": {"n": 1, "b": 1, "c": 100.0}, "Limburg": {"n": 28, "b": 23, "c": 82.1}, "Noord-Brabant": {"n": 6, "b": 3, "c": 50.0}, "Overijssel": {"n": 1, "b": 1, "c": 100.0}, "Région flamande": {"n": 1, "b": 1, "c": 100.0}, "nan": {"n": 2, "b": 1, "c": 50.0}}}}, "Michel": {"Januari": {"n": 28, "b": 20, "niet": 8, "conv": 71.4, "wi": 47714, "wb": 30948, "cwi": 64.9, "nr": 7, "nb": 3, "nc": 42.9, "prov": {"Drenthe": {"n": 2, "b": 2, "c": 100.0}, "Flevoland": {"n": 5, "b": 3, "c": 60.0}, "Frysl√¢n": {"n": 5, "b": 3, "c": 60.0}, "Gelderland": {"n": 2, "b": 0, "c": 0.0}, "Groningen": {"n": 2, "b": 2, "c": 100.0}, "Overijssel": {"n": 8, "b": 7, "c": 87.5}}}, "Februari": {"n": 40, "b": 29, "niet": 11, "conv": 72.5, "wi": 69637, "wb": 46576, "cwi": 66.9, "nr": 9, "nb": 3, "nc": 33.3, "prov": {"Drenthe": {"n": 3, "b": 1, "c": 33.3}, "Flevoland": {"n": 1, "b": 0, "c": 0.0}, "Frysl√¢n": {"n": 5, "b": 4, "c": 80.0}, "Gelderland": {"n": 6, "b": 5, "c": 83.3}, "Groningen": {"n": 4, "b": 4, "c": 100.0}, "Overijssel": {"n": 18, "b": 13, "c": 72.2}}}, "Maart": {"n": 66, "b": 52, "niet": 14, "conv": 78.8, "wi": 129152, "wb": 98623, "cwi": 76.4, "nr": 15, "nb": 6, "nc": 40.0, "prov": {"Drenthe": {"n": 2, "b": 2, "c": 100.0}, "Flevoland": {"n": 8, "b": 6, "c": 75.0}, "Fryslân": {"n": 1, "b": 1, "c": 100.0}, "Frysl√¢n": {"n": 10, "b": 9, "c": 90.0}, "Gelderland": {"n": 4, "b": 4, "c": 100.0}, "Groningen": {"n": 3, "b": 3, "c": 100.0}, "Overijssel": {"n": 33, "b": 24, "c": 72.7}, "Utrecht": {"n": 1, "b": 1, "c": 100.0}}}, "April": {"n": 62, "b": 42, "niet": 20, "conv": 67.7, "wi": 123210, "wb": 78156, "cwi": 63.4, "nr": 9, "nb": 1, "nc": 11.1, "prov": {"Drenthe": {"n": 3, "b": 2, "c": 66.7}, "Flevoland": {"n": 5, "b": 3, "c": 60.0}, "Fryslân": {"n": 11, "b": 7, "c": 63.6}, "Gelderland": {"n": 3, "b": 2, "c": 66.7}, "Groningen": {"n": 8, "b": 6, "c": 75.0}, "Noord-Holland": {"n": 4, "b": 3, "c": 75.0}, "Overijssel": {"n": 25, "b": 17, "c": 68.0}}}}, "Peter": {"Januari": {"n": 51, "b": 38, "niet": 13, "conv": 74.5, "wi": 97350, "wb": 62104, "cwi": 63.8, "nr": 13, "nb": 4, "nc": 30.8, "prov": {"Gelderland": {"n": 16, "b": 11, "c": 68.8}, "Limburg": {"n": 4, "b": 4, "c": 100.0}, "Noord-Brabant": {"n": 15, "b": 13, "c": 86.7}, "Overijssel": {"n": 3, "b": 2, "c": 66.7}, "Utrecht": {"n": 7, "b": 4, "c": 57.1}, "Zuid-Holland": {"n": 4, "b": 2, "c": 50.0}}}, "Februari": {"n": 55, "b": 40, "niet": 15, "conv": 72.7, "wi": 98231, "wb": 71392, "cwi": 72.7, "nr": 16, "nb": 4, "nc": 25.0, "prov": {"Gelderland": {"n": 11, "b": 8, "c": 72.7}, "Noord-Brabant": {"n": 20, "b": 15, "c": 75.0}, "Noord-Holland": {"n": 5, "b": 2, "c": 40.0}, "Utrecht": {"n": 6, "b": 5, "c": 83.3}, "Zuid-Holland": {"n": 11, "b": 8, "c": 72.7}}}, "Maart": {"n": 59, "b": 43, "niet": 16, "conv": 72.9, "wi": 115646, "wb": 78625, "cwi": 68.0, "nr": 19, "nb": 5, "nc": 26.3, "prov": {"Gelderland": {"n": 24, "b": 16, "c": 66.7}, "Limburg": {"n": 1, "b": 1, "c": 100.0}, "Noord-Brabant": {"n": 8, "b": 7, "c": 87.5}, "Noord-Holland": {"n": 8, "b": 4, "c": 50.0}, "Overijssel": {"n": 4, "b": 4, "c": 100.0}, "Utrecht": {"n": 12, "b": 9, "c": 75.0}}}, "April": {"n": 43, "b": 26, "niet": 17, "conv": 60.5, "wi": 75119, "wb": 41188, "cwi": 54.8, "nr": 6, "nb": 0, "nc": 0.0, "prov": {"Gelderland": {"n": 10, "b": 6, "c": 60.0}, "Limburg": {"n": 1, "b": 0, "c": 0.0}, "Noord-Brabant": {"n": 8, "b": 5, "c": 62.5}, "Noord-Holland": {"n": 1, "b": 0, "c": 0.0}, "Overijssel": {"n": 6, "b": 5, "c": 83.3}, "Utrecht": {"n": 10, "b": 8, "c": 80.0}, "Zuid-Holland": {"n": 3, "b": 0, "c": 0.0}}}}, "Quinten": {"Januari": {"n": 48, "b": 34, "niet": 14, "conv": 70.8, "wi": 84091, "wb": 57716, "cwi": 68.6, "nr": 12, "nb": 5, "nc": 41.7, "prov": {"België": {"n": 1, "b": 1, "c": 100.0}, "Noord-Brabant": {"n": 16, "b": 12, "c": 75.0}, "Utrecht": {"n": 1, "b": 1, "c": 100.0}, "Zeeland": {"n": 5, "b": 4, "c": 80.0}, "Zuid-Holland": {"n": 24, "b": 15, "c": 62.5}}}, "Februari": {"n": 59, "b": 42, "niet": 17, "conv": 71.2, "wi": 98364, "wb": 62599, "cwi": 63.6, "nr": 20, "nb": 7, "nc": 35.0, "prov": {"België": {"n": 5, "b": 4, "c": 80.0}, "Noord-Brabant": {"n": 17, "b": 12, "c": 70.6}, "Zeeland": {"n": 6, "b": 5, "c": 83.3}, "Zuid-Holland": {"n": 26, "b": 17, "c": 65.4}}}, "Maart": {"n": 63, "b": 45, "niet": 18, "conv": 71.4, "wi": 126202, "wb": 86081, "cwi": 68.2, "nr": 22, "nb": 8, "nc": 36.4, "prov": {"België": {"n": 4, "b": 3, "c": 75.0}, "Noord-Brabant": {"n": 20, "b": 14, "c": 70.0}, "Zeeland": {"n": 3, "b": 1, "c": 33.3}, "Zuid-Holland": {"n": 34, "b": 27, "c": 79.4}}}, "April": {"n": 43, "b": 28, "niet": 15, "conv": 65.1, "wi": 73255, "wb": 44905, "cwi": 61.3, "nr": 7, "nb": 1, "nc": 14.3, "prov": {"België": {"n": 2, "b": 2, "c": 100.0}, "Noord-Brabant": {"n": 7, "b": 5, "c": 71.4}, "Utrecht": {"n": 1, "b": 0, "c": 0.0}, "Zeeland": {"n": 5, "b": 3, "c": 60.0}, "Zuid-Holland": {"n": 22, "b": 16, "c": 72.7}}}}, "Ramon": {"Januari": {"n": 82, "b": 73, "niet": 9, "conv": 89.0, "wi": 158170, "wb": 139542, "cwi": 88.2, "nr": 11, "nb": 7, "nc": 63.6, "prov": {"Drenthe": {"n": 5, "b": 5, "c": 100.0}, "Frysl√¢n": {"n": 3, "b": 3, "c": 100.0}, "Gelderland": {"n": 3, "b": 2, "c": 66.7}, "Groningen": {"n": 8, "b": 8, "c": 100.0}, "Overijssel": {"n": 62, "b": 54, "c": 87.1}}}, "Februari": {"n": 80, "b": 63, "niet": 17, "conv": 78.8, "wi": 147789, "wb": 116798, "cwi": 79.0, "nr": 18, "nb": 7, "nc": 38.9, "prov": {"Drenthe": {"n": 1, "b": 1, "c": 100.0}, "Frysl√¢n": {"n": 5, "b": 3, "c": 60.0}, "Gelderland": {"n": 15, "b": 11, "c": 73.3}, "Groningen": {"n": 4, "b": 4, "c": 100.0}, "Overijssel": {"n": 52, "b": 43, "c": 82.7}}}, "Maart": {"n": 39, "b": 30, "niet": 9, "conv": 76.9, "wi": 104893, "wb": 75604, "cwi": 72.1, "nr": 14, "nb": 5, "nc": 35.7, "prov": {"Drenthe": {"n": 6, "b": 4, "c": 66.7}, "Groningen": {"n": 7, "b": 6, "c": 85.7}, "Overijssel": {"n": 25, "b": 19, "c": 76.0}}}, "April": {"n": 43, "b": 29, "niet": 14, "conv": 67.4, "wi": 69496, "wb": 44516, "cwi": 64.1, "nr": 2, "nb": 0, "nc": 0.0, "prov": {"Drenthe": {"n": 10, "b": 7, "c": 70.0}, "Fryslân": {"n": 4, "b": 2, "c": 50.0}, "Groningen": {"n": 2, "b": 1, "c": 50.0}, "Overijssel": {"n": 26, "b": 19, "c": 73.1}}}}, "Remco": {"Januari": {"n": 48, "b": 28, "niet": 20, "conv": 58.3, "wi": 84884, "wb": 55811, "cwi": 65.8, "nr": 13, "nb": 6, "nc": 46.2, "prov": {"Flevoland": {"n": 2, "b": 1, "c": 50.0}, "Noord-Holland": {"n": 42, "b": 25, "c": 59.5}, "Utrecht": {"n": 1, "b": 0, "c": 0.0}, "Zuid-Holland": {"n": 3, "b": 2, "c": 66.7}}}, "Februari": {"n": 50, "b": 37, "niet": 13, "conv": 74.0, "wi": 78669, "wb": 55222, "cwi": 70.2, "nr": 16, "nb": 5, "nc": 31.2, "prov": {"Flevoland": {"n": 4, "b": 2, "c": 50.0}, "Frysl√¢n": {"n": 1, "b": 1, "c": 100.0}, "Noord-Holland": {"n": 40, "b": 32, "c": 80.0}, "Zuid-Holland": {"n": 2, "b": 1, "c": 50.0}}}, "Maart": {"n": 52, "b": 40, "niet": 12, "conv": 76.9, "wi": 82548, "wb": 63670, "cwi": 77.1, "nr": 14, "nb": 7, "nc": 50.0, "prov": {"Flevoland": {"n": 1, "b": 1, "c": 100.0}, "Gelderland": {"n": 3, "b": 3, "c": 100.0}, "Noord-Brabant": {"n": 3, "b": 2, "c": 66.7}, "Noord-Holland": {"n": 36, "b": 26, "c": 72.2}, "Utrecht": {"n": 1, "b": 1, "c": 100.0}, "Zuid-Holland": {"n": 8, "b": 7, "c": 87.5}}}, "April": {"n": 72, "b": 46, "niet": 26, "conv": 63.9, "wi": 137871, "wb": 74388, "cwi": 54.0, "nr": 14, "nb": 2, "nc": 14.3, "prov": {"Flevoland": {"n": 8, "b": 4, "c": 50.0}, "Gelderland": {"n": 5, "b": 5, "c": 100.0}, "Noord-Holland": {"n": 39, "b": 24, "c": 61.5}, "Overijssel": {"n": 1, "b": 1, "c": 100.0}, "Utrecht": {"n": 9, "b": 7, "c": 77.8}, "Zuid-Holland": {"n": 7, "b": 3, "c": 42.9}}}}, "Torsten": {"Januari": {"n": 37, "b": 28, "niet": 9, "conv": 75.7, "wi": 69110, "wb": 52108, "cwi": 75.4, "nr": 8, "nb": 2, "nc": 25.0, "prov": {"Flevoland": {"n": 1, "b": 1, "c": 100.0}, "Noord-Holland": {"n": 7, "b": 4, "c": 57.1}, "Overijssel": {"n": 2, "b": 2, "c": 100.0}, "Utrecht": {"n": 12, "b": 9, "c": 75.0}, "Zuid-Holland": {"n": 12, "b": 11, "c": 91.7}}}, "Februari": {"n": 51, "b": 28, "niet": 23, "conv": 54.9, "wi": 92028, "wb": 54908, "cwi": 59.7, "nr": 23, "nb": 6, "nc": 26.1, "prov": {"Flevoland": {"n": 2, "b": 1, "c": 50.0}, "Frysl√¢n": {"n": 1, "b": 1, "c": 100.0}, "Gelderland": {"n": 7, "b": 2, "c": 28.6}, "Noord-Holland": {"n": 13, "b": 10, "c": 76.9}, "Overijssel": {"n": 11, "b": 5, "c": 45.5}, "Utrecht": {"n": 5, "b": 2, "c": 40.0}, "Zuid-Holland": {"n": 10, "b": 5, "c": 50.0}}}, "Maart": {"n": 25, "b": 18, "niet": 7, "conv": 72.0, "wi": 62965, "wb": 45615, "cwi": 72.4, "nr": 6, "nb": 2, "nc": 33.3, "prov": {"Drenthe": {"n": 1, "b": 1, "c": 100.0}, "Flevoland": {"n": 3, "b": 2, "c": 66.7}, "Noord-Holland": {"n": 14, "b": 9, "c": 64.3}, "Overijssel": {"n": 1, "b": 1, "c": 100.0}, "Utrecht": {"n": 1, "b": 1, "c": 100.0}, "Zuid-Holland": {"n": 5, "b": 4, "c": 80.0}}}, "April": {"n": 39, "b": 20, "niet": 19, "conv": 51.3, "wi": 75966, "wb": 23376, "cwi": 30.8, "nr": 7, "nb": 0, "nc": 0.0, "prov": {"Gelderland": {"n": 2, "b": 0, "c": 0.0}, "Noord-Holland": {"n": 11, "b": 5, "c": 45.5}, "Overijssel": {"n": 9, "b": 5, "c": 55.6}, "Utrecht": {"n": 1, "b": 1, "c": 100.0}, "Zuid-Holland": {"n": 14, "b": 9, "c": 64.3}}}}};
+var PV={"Januari": {"België": {"n": 6, "b": 4, "c": 66.7}, "Drenthe": {"n": 7, "b": 7, "c": 100.0}, "Flevoland": {"n": 8, "b": 5, "c": 62.5}, "Frysl√¢n": {"n": 8, "b": 6, "c": 75.0}, "Gelderland": {"n": 43, "b": 32, "c": 74.4}, "Groningen": {"n": 10, "b": 10, "c": 100.0}, "Limburg": {"n": 11, "b": 10, "c": 90.9}, "Noord-Brabant": {"n": 41, "b": 34, "c": 82.9}, "Noord-Holland": {"n": 49, "b": 29, "c": 59.2}, "Overijssel": {"n": 93, "b": 79, "c": 84.9}, "Utrecht": {"n": 44, "b": 32, "c": 72.7}, "Zeeland": {"n": 5, "b": 4, "c": 80.0}, "Zuid-Holland": {"n": 60, "b": 44, "c": 73.3}}, "Februari": {"België": {"n": 26, "b": 19, "c": 73.1}, "Drenthe": {"n": 4, "b": 2, "c": 50.0}, "Flevoland": {"n": 8, "b": 4, "c": 50.0}, "Frysl√¢n": {"n": 12, "b": 9, "c": 75.0}, "Gelderland": {"n": 62, "b": 40, "c": 64.5}, "Groningen": {"n": 8, "b": 8, "c": 100.0}, "Limburg": {"n": 23, "b": 17, "c": 73.9}, "Noord-Brabant": {"n": 73, "b": 55, "c": 75.3}, "Noord-Holland": {"n": 58, "b": 44, "c": 75.9}, "Overijssel": {"n": 97, "b": 74, "c": 76.3}, "Provincie Antwerpen": {"n": 1, "b": 1, "c": 100.0}, "Utrecht": {"n": 31, "b": 20, "c": 64.5}, "Zeeland": {"n": 6, "b": 5, "c": 83.3}, "Zuid-Holland": {"n": 74, "b": 54, "c": 73.0}}, "Maart": {"België": {"n": 34, "b": 24, "c": 70.6}, "Drenthe": {"n": 9, "b": 7, "c": 77.8}, "Flevoland": {"n": 12, "b": 9, "c": 75.0}, "Fryslân": {"n": 1, "b": 1, "c": 100.0}, "Frysl√¢n": {"n": 10, "b": 9, "c": 90.0}, "Gelderland": {"n": 54, "b": 44, "c": 81.5}, "Groningen": {"n": 10, "b": 9, "c": 90.0}, "Limburg": {"n": 15, "b": 10, "c": 66.7}, "Noord-Brabant": {"n": 66, "b": 49, "c": 74.2}, "Noord-Holland": {"n": 58, "b": 39, "c": 67.2}, "Overijssel": {"n": 100, "b": 82, "c": 82.0}, "Utrecht": {"n": 30, "b": 24, "c": 80.0}, "Zeeland": {"n": 3, "b": 1, "c": 33.3}, "Zuid-Holland": {"n": 69, "b": 55, "c": 79.7}}, "April": {"België": {"n": 23, "b": 14, "c": 60.9}, "Drenthe": {"n": 13, "b": 9, "c": 69.2}, "Flevoland": {"n": 16, "b": 8, "c": 50.0}, "Fryslân": {"n": 15, "b": 9, "c": 60.0}, "Gelderland": {"n": 38, "b": 25, "c": 65.8}, "Groningen": {"n": 10, "b": 7, "c": 70.0}, "Limburg": {"n": 29, "b": 23, "c": 79.3}, "Noord-Brabant": {"n": 37, "b": 26, "c": 70.3}, "Noord-Holland": {"n": 61, "b": 38, "c": 62.3}, "Overijssel": {"n": 107, "b": 74, "c": 69.2}, "Région flamande": {"n": 1, "b": 1, "c": 100.0}, "Utrecht": {"n": 35, "b": 27, "c": 77.1}, "Zeeland": {"n": 5, "b": 3, "c": 60.0}, "Zuid-Holland": {"n": 54, "b": 31, "c": 57.4}, "nan": {"n": 2, "b": 1, "c": 50.0}}, "Totaal": {"België": {"n": 89, "b": 61, "c": 68.5}, "Drenthe": {"n": 33, "b": 25, "c": 75.8}, "Flevoland": {"n": 44, "b": 26, "c": 59.1}, "Frysl√¢n": {"n": 30, "b": 24, "c": 80.0}, "Gelderland": {"n": 197, "b": 141, "c": 71.6}, "Groningen": {"n": 38, "b": 34, "c": 89.5}, "Limburg": {"n": 78, "b": 60, "c": 76.9}, "Noord-Brabant": {"n": 217, "b": 164, "c": 75.6}, "Noord-Holland": {"n": 226, "b": 150, "c": 66.4}, "Overijssel": {"n": 397, "b": 309, "c": 77.8}, "Utrecht": {"n": 140, "b": 103, "c": 73.6}, "Zeeland": {"n": 19, "b": 13, "c": 68.4}, "Zuid-Holland": {"n": 257, "b": 184, "c": 71.6}, "Provincie Antwerpen": {"n": 1, "b": 1, "c": 100.0}, "Fryslân": {"n": 16, "b": 10, "c": 62.5}, "Région flamande": {"n": 1, "b": 1, "c": 100.0}, "nan": {"n": 2, "b": 1, "c": 50.0}}};
+var NC=[{"naam": "Danny Scholing", "maand": "Januari", "adv": "Ramon", "waarde": 2926.0, "contact": "Mail", "reden": "Is er nog mee bezig"}, {"naam": "Petra Krudde", "maand": "Februari", "adv": "Torsten", "waarde": 2713.0, "contact": "Mail", "reden": "Geen gehoor"}, {"naam": "Martijn Visser", "maand": "Februari", "adv": "Ramon", "waarde": 1627.0, "contact": "Mail", "reden": "Geen gehoor"}, {"naam": "Melanie De Graaf", "maand": "Maart", "adv": "Torsten", "waarde": 4457.9, "contact": "Bellen", "reden": "Geen gehoor"}, {"naam": "Olaf Corduwener", "maand": "Maart", "adv": "Jeffrey", "waarde": 4230.65, "contact": "Mail", "reden": ""}, {"naam": "Anneke Rietman", "maand": "Maart", "adv": "Cristian", "waarde": 1361.0, "contact": "Mail", "reden": "Geen gehoor"}, {"naam": "Asli Akyol", "maand": "Maart", "adv": "Remco", "waarde": 1135.0, "contact": "Bellen", "reden": "Overig (reden plaatsen in blad 'redenen')"}, {"naam": "Ingeborg Bloem", "maand": "Maart", "adv": "Remco", "waarde": 1490.0, "contact": "Mail", "reden": "Is er nog mee bezig"}, {"naam": "Eline Kleinman", "maand": "Maart", "adv": "Michel", "waarde": 585.0, "contact": "Mail", "reden": ""}];
+var O="#F59901",D2="#2D2D2D",L="#F9CD92",P="#ce93d8",GR="#27ae60",BL="#1565c0",PU="#9c27b0",RD="#e74c3c";
+
+// ── page switching ──
+function showPage(id,el){
+  document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");});
+  document.getElementById("page-"+id).classList.add("active");
+  el.classList.add("active");
+  if(id==="apr" && !window._aprDone){window._aprDone=true; initAprCharts();}
+  if(id==="nc"  && !window._ncDone) {window._ncDone=true;  initNcCharts();}
+}
+
+function gc(c){return c>=85?"#27ae60":c>=75?O:c>=65?"#f39c12":"#ef5350";}
+
+// ── overzicht charts ──
+var q1g=75.4;
+new Chart(document.getElementById("cConvBar"),{
+  type:"bar",
+  data:{labels:M,datasets:[
+    {data:M.map(function(m){return MD[m].conv;}),backgroundColor:[O,O,O,PU],borderRadius:5},
+    {type:"line",data:[q1g,q1g,q1g,q1g],borderColor:"#aaa",borderDash:[5,3],backgroundColor:"transparent",pointRadius:0,borderWidth:1.5}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.raw+"%";}}}},
+    scales:{y:{min:50,max:90,grid:{color:"#f0f0f0"},ticks:{callback:function(v){return v+"%";}}}}}
+});
+
+new Chart(document.getElementById("cWaarde"),{
+  type:"bar",
+  data:{labels:M,datasets:[
+    {data:M.map(function(m){return MD[m].wi;}),backgroundColor:[L,L,L,"#e1bee7"]},
+    {data:M.map(function(m){return MD[m].wb;}),backgroundColor:[O,O,O,PU]}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{y:{grid:{color:"#f0f0f0"},ticks:{callback:function(v){return "\u20AC"+Math.round(v/1000)+"k";}}}}}
+});
+
+// ── adviseur charts ──
+var c4=[O,D2,L,P];
+new Chart(document.getElementById("cAdvConv"),{
+  type:"bar",
+  data:{labels:AN,datasets:M.map(function(m,i){
+    return{label:m.slice(0,3),data:AN.map(function(a){return AD[a][m]?AD[a][m].conv:0;}),backgroundColor:c4[i]};
+  })},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:"bottom",labels:{boxWidth:11,font:{size:11}}},
+      tooltip:{callbacks:{label:function(ctx){
+        var a=AN[ctx.dataIndex],m=M[ctx.datasetIndex],d=AD[a][m];
+        return d?M[ctx.datasetIndex]+": "+d.conv+"% ("+d.b+"/"+d.n+")":""; }}}},
+    scales:{x:{ticks:{autoSkip:false}},y:{min:35,max:100,grid:{color:"#f0f0f0"},ticks:{callback:function(v){return v+"%";}}}}}
+});
+
+new Chart(document.getElementById("cAdvWaarde"),{
+  type:"bar",
+  data:{labels:AN,datasets:M.map(function(m,i){
+    return{label:m.slice(0,3),data:AN.map(function(a){return AD[a][m]?AD[a][m].wi:0;}),backgroundColor:c4[i]};
+  })},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:"bottom",labels:{boxWidth:11,font:{size:11}}}},
+    scales:{x:{ticks:{autoSkip:false}},y:{grid:{color:"#f0f0f0"},ticks:{callback:function(v){return "\u20AC"+Math.round(v/1000)+"k";}}}}}
+});
+
+// ── provincie charts ──
+var _cP=null,_cPV=null;
+function selProv(m,el){
+  document.querySelectorAll(".mb").forEach(function(b){b.classList.remove("active");});
+  el.classList.add("active");
+  var d=PV[m];
+  document.getElementById("ptitle").textContent="Conversie % \u2014 "+m;
+  document.getElementById("pvtitle").textContent="Volume \u2014 "+m;
+  var s=Object.entries(d).sort(function(a,b){return b[1].c-a[1].c;});
+  var h=Math.max(260,s.length*40+60);
+  document.getElementById("pwrap").style.height=h+"px";
+  if(_cP){_cP.destroy();_cP=null;}
+  _cP=new Chart(document.getElementById("cProv"),{
+    type:"bar",
+    data:{labels:s.map(function(x){return x[0];}),datasets:[{data:s.map(function(x){return x[1].c;}),backgroundColor:s.map(function(x){return gc(x[1].c);})}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return s[ctx.dataIndex][1].c+"% ("+s[ctx.dataIndex][1].b+"/"+s[ctx.dataIndex][1].n+")";}}}},
+      scales:{x:{min:0,max:110,ticks:{callback:function(v){return v+"%";}},grid:{color:"#f0f0f0"}},y:{ticks:{autoSkip:false,font:{size:11}}}}}
+  });
+  var vs=Object.entries(d).sort(function(a,b){return b[1].n-a[1].n;});
+  if(_cPV){_cPV.destroy();_cPV=null;}
+  _cPV=new Chart(document.getElementById("cProvVol"),{
+    type:"bar",
+    data:{labels:vs.map(function(x){return x[0];}),datasets:[{data:vs.map(function(x){return x[1].n;}),backgroundColor:L},{data:vs.map(function(x){return x[1].b;}),backgroundColor:O}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{autoSkip:false,maxRotation:45,font:{size:11}}},y:{grid:{color:"#f0f0f0"}}}}
+  });
+  var tb=document.getElementById("provtb"); tb.innerHTML="";
+  vs.forEach(function(x){
+    var p=x[0],v=x[1],cls=v.c>=75?"pg":v.c>=65?"po":"pr";
+    tb.innerHTML+="<tr><td><strong>"+p+"</strong></td><td>"+v.n+"</td><td>"+v.b+"</td><td>"+(v.n-v.b)+"</td><td><span class='pill "+cls+"'> "+v.c+"%</span></td></tr>";
+  });
+}
+selProv("Totaal",document.querySelector(".mb.active"));
+
+// ── nabellen charts ──
+new Chart(document.getElementById("cNab"),{
+  type:"bar",
+  data:{labels:M,datasets:[{data:M.map(function(m){return MD[m].nc;}),backgroundColor:[O,O,O,PU],borderRadius:5}]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var m=M[ctx.dataIndex];return ctx.raw+"% ("+MD[m].nb+"/"+MD[m].nr+")";}}}},
+    scales:{y:{min:0,max:55,grid:{color:"#f0f0f0"},ticks:{callback:function(v){return v+"%";}}}}}
+});
+
+var allRed={};
+M.forEach(function(m){Object.entries(MD[m].red||{}).forEach(function(e){allRed[e[0]]=(allRed[e[0]]||0)+e[1];});});
+var rs=Object.entries(allRed).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+new Chart(document.getElementById("cReden"),{
+  type:"doughnut",
+  data:{labels:rs.map(function(x){return x[0].length>24?x[0].slice(0,24)+"...":x[0];}),
+    datasets:[{data:rs.map(function(x){return x[1];}),
+      backgroundColor:[D2,O,"#e74c3c","#95a5a6","#27ae60",L,"#9b59b6","#3498db"],borderWidth:2,borderColor:"#fff"}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{font:{size:10},boxWidth:10}}}}
+});
+
+// ── april lazy charts ──
+function initAprCharts(){
+  var ac=AN.map(function(a){var c=AD[a]["April"]?AD[a]["April"].conv:0;return c>=70?"#27ae60":c>=60?O:c>=50?"#ff9800":"#ef5350";});
+  var q1r=AN.map(function(a){var arr=["Januari","Februari","Maart"].filter(function(m){return AD[a][m];});return arr.length?Math.round(arr.reduce(function(s,m){return s+AD[a][m].conv;},0)/arr.length*10)/10:74.6;});
+  new Chart(document.getElementById("cAprAdv"),{
+    type:"bar",
+    data:{labels:AN,datasets:[
+      {label:"April",data:AN.map(function(a){return AD[a]["April"]?AD[a]["April"].conv:0;}),backgroundColor:ac,borderRadius:4},
+      {label:"Q1 gem.",data:q1r,backgroundColor:"rgba(45,45,45,0.18)",borderColor:D2,borderWidth:1.5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:"bottom",labels:{boxWidth:11,font:{size:11}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+": "+ctx.raw+"%;"}}}},
+      scales:{x:{ticks:{autoSkip:false}},y:{min:30,max:100,grid:{color:"#f0f0f0"},ticks:{callback:function(v){return v+"%";}}}}}
+  });
+  var aps=Object.entries(PV["April"]||{}).sort(function(a,b){return b[1].c-a[1].c;});
+  var aph=Math.max(240,aps.length*40+60);
+  document.getElementById("apwrap").style.height=aph+"px";
+  new Chart(document.getElementById("cAprProv"),{
+    type:"bar",
+    data:{labels:aps.map(function(x){return x[0];}),datasets:[{data:aps.map(function(x){return x[1].c;}),backgroundColor:aps.map(function(x){return gc(x[1].c);})}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return aps[ctx.dataIndex][1].c+"% ("+aps[ctx.dataIndex][1].b+"/"+aps[ctx.dataIndex][1].n+")";}}}},
+      scales:{x:{min:0,max:110,ticks:{callback:function(v){return v+"%";}},grid:{color:"#f0f0f0"}},y:{ticks:{autoSkip:false,font:{size:10}}}}}
+  });
+}
+
+// ── new conv lazy charts ──
+function initNcCharts(){
+  new Chart(document.getElementById("cNcMeth"),{
+    type:"doughnut",
+    data:{labels:["\u{1F4E7} Mail (7x)","\u{1F4DE} Bellen (2x)"],
+      datasets:[{data:[7,2],backgroundColor:[BL,O],borderWidth:3,borderColor:"#fff"}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:12},boxWidth:12}}}}
+  });
+  var nm={Januari:0,Februari:0,Maart:0};
+  NC.forEach(function(x){if(nm[x.maand]!==undefined)nm[x.maand]++;});
+  new Chart(document.getElementById("cNcMnd"),{
+    type:"bar",
+    data:{labels:Object.keys(nm),datasets:[{data:Object.values(nm),backgroundColor:BL,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:5,ticks:{stepSize:1},grid:{color:"#f0f0f0"}}}}
+  });
+}
+
+// ── upload logic ──
+var _bellFiles=null, _provFile=null;
+
+function dropFile(e,type){
+  e.preventDefault();
+  var files=Array.from(e.dataTransfer.files).filter(function(f){return /\.xlsx?$/i.test(f.name);});
+  if(files.length) assignFiles(files,type);
+}
+function handleFile(e,type){assignFiles(Array.from(e.target.files),type);}
+function assignFiles(files,type){
+  if(type==="bell"){
+    _bellFiles=files;
+    document.getElementById("bell-ok").style.display="block";
+    document.getElementById("bell-name").textContent=files.length===1?files[0].name:files.length+" bestanden";
+    document.getElementById("card-bell").classList.add("loaded");
+  } else {
+    _provFile=files[0];
+    document.getElementById("prov-ok").style.display="block";
+    document.getElementById("prov-name").textContent=files[0].name;
+    document.getElementById("card-prov").classList.add("loaded");
+  }
+  document.getElementById("btnProcess").disabled=!_bellFiles;
+}
+
+var MAAND_MAP={"januari 2026":"Januari","februari 2026":"Februari","maart 2026":"Maart","april 2026":"April","mei 2026":"Mei","januari":"Januari","februari":"Februari","maart":"Maart","april":"April","mei":"Mei"};
+var PROV_MAP={"jan":"Januari","feb":"Februari","mrt":"Maart","apr":"April"};
+var BELGIE=["vlaanderen","brussel","provincie antwerpen","prov. antwerpen","vlaams gewest","vlaams-brabant","west-vlaanderen","oost-vlaanderen"];
+
+function processUpload(){
+  document.getElementById("btnProcess").disabled=true;
+  document.getElementById("upError").style.display="none";
+  document.getElementById("upProgress").style.display="block";
+  document.getElementById("upFill").style.width="10%";
+  // Save old data for comparison
+  var prevRows=window._allRows||null;
+  Promise.all(_bellFiles.map(function(f){return readWB(f);})).then(function(wbs){
+    document.getElementById("upFill").style.width="40%";
+    var rows=[];
+    wbs.forEach(function(wb){
+      wb.SheetNames.forEach(function(sn){
+        var maand=MAAND_MAP[sn.toLowerCase().trim()];
+        if(!maand) return;
+        var ws=wb.Sheets[sn];
+        var data=XLSX.utils.sheet_to_json(ws,{defval:null,raw:false});
+        if(!data.length) return;
+        var keys=Object.keys(data[0]);
+        var cm=detectCols(keys);
+        data.forEach(function(r){
+          var adv=cleanStr(r[cm.adviseur]);
+          if(!adv||adv.toLowerCase()==="kevin") return;
+          adv=adv.charAt(0).toUpperCase()+adv.slice(1).toLowerCase();
+          rows.push({
+            ordernummer: cleanStr(r[cm.ordernummer]),
+            klant: cleanStr(r[cm.klant]),
+            adviseur: adv,
+            waarde: cleanNum(r[cm.waarde]),
+            besteld: cleanStr(r[cm.besteld]),
+            datum_meting: cleanStr(r[cm.datum_meting]),
+            datum_bellen: cleanStr(r[cm.datum_bellen]),
+            bel_of_mail: cleanStr(r[cm.bel_of_mail]),
+            reden: cleanStr(r[cm.reden]),
+            provincie: null,
+            maand: maand,
+            isBestelld: !!cleanStr(r[cm.besteld]),
+            heeftContact: !!cleanStr(r[cm.datum_bellen])
+          });
+        });
+      });
+    });
+    document.getElementById("upFill").style.width="60%";
+    if(_provFile){
+      return readWB(_provFile).then(function(pvWb){
+        var pvMap={};
+        pvWb.SheetNames.forEach(function(sn){
+          var ws=pvWb.Sheets[sn];
+          var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
+          data.forEach(function(r){
+            var ordr=r[0]?String(r[0]).trim().split(".")[0]:null;
+            var pv=r[1]?String(r[1]).trim():null;
+            if(!ordr||!pv) return;
+            var pvN=BELGIE.includes(pv.toLowerCase())?"Belgi\u00eb":pv;
+            if(!pvMap[ordr]) pvMap[ordr]=pvN;
+          });
+        });
+        rows.forEach(function(r){if(r.ordernummer&&pvMap[r.ordernummer]) r.provincie=pvMap[r.ordernummer];});
+        return {rows:rows,prevRows:prevRows};
+      });
+    }
+    return {rows:rows,prevRows:prevRows};
+  }).then(function(res){
+    document.getElementById("upFill").style.width="85%";
+    window._allRows=res.rows;
+    rebuildDashboard(res.rows, res.prevRows);
+    document.getElementById("upFill").style.width="100%";
+    setTimeout(function(){
+      document.getElementById("upProgress").style.display="none";
+      showPage("ov",document.querySelector(".tab"));
+    },400);
+  }).catch(function(err){
+    document.getElementById("upError").textContent="Fout: "+err.message;
+    document.getElementById("upError").style.display="block";
+    document.getElementById("btnProcess").disabled=false;
+  });
+}
+
+function readWB(file){
+  return new Promise(function(res,rej){
+    var rd=new FileReader();
+    rd.onload=function(e){try{res(XLSX.read(e.target.result,{type:"binary",cellDates:true}));}catch(err){rej(err);}}
+    rd.onerror=function(){rej(new Error("Kan bestand niet lezen"));};
+    rd.readAsBinaryString(file);
+  });
+}
+
+function cleanStr(v){return(v===null||v===undefined||v==="")?null:String(v).trim()||null;}
+function cleanNum(v){var n=parseFloat(String(v||0).replace(/[\u20AC,\s]/g,""));return isNaN(n)?0:n;}
+
+function detectCols(keys){
+  var m={};
+  var p={ordernummer:/ordernummer|meetservice/i,klant:/klant|naam/i,adviseur:/adviseur/i,waarde:/waarde|prijs/i,besteld:/besteld/i,datum_meting:/datum.*met|meetdatum/i,datum_bellen:/datum.*bell|bel.*datum/i,bel_of_mail:/bel.*mail|mail.*bel/i,reden:/reden/i};
+  keys.forEach(function(k){Object.entries(p).forEach(function(e){if(!m[e[0]]&&e[1].test(k)) m[e[0]]=k;});});
+  // fallback positional
+  if(!m.ordernummer&&keys[2]) m.ordernummer=keys[2];
+  if(!m.adviseur&&keys[4])   m.adviseur=keys[4];
+  if(!m.waarde&&keys[5])     m.waarde=keys[5];
+  if(!m.besteld&&keys[6])    m.besteld=keys[6];
+  if(!m.datum_bellen&&keys[7]) m.datum_bellen=keys[7];
+  if(!m.bel_of_mail&&keys[9]) m.bel_of_mail=keys[9];
+  if(!m.reden&&keys[10])     m.reden=keys[10];
+  return m;
+}
+
+function buildStats(subset){
+  var n=subset.length, b=subset.filter(function(r){return r.isBestelld;}).length;
+  var wi=subset.reduce(function(s,r){return s+r.waarde;},0);
+  var wb=subset.filter(function(r){return r.isBestelld;}).reduce(function(s,r){return s+r.waarde;},0);
+  var nr=subset.filter(function(r){return r.heeftContact;}).length;
+  var nb=subset.filter(function(r){return r.heeftContact&&r.isBestelld;}).length;
+  var red={},bom={};
+  subset.filter(function(r){return !r.isBestelld&&r.reden;}).forEach(function(r){red[r.reden]=(red[r.reden]||0)+1;});
+  subset.filter(function(r){return r.bel_of_mail;}).forEach(function(r){bom[r.bel_of_mail]=(bom[r.bel_of_mail]||0)+1;});
+  return{n:n,b:b,niet:n-b,conv:n>0?Math.round(b/n*1000)/10:0,wi:Math.round(wi),wb:Math.round(wb),cwi:wi>0?Math.round(wb/wi*1000)/10:0,nr:nr,nb:nb,nc:nr>0?Math.round(nb/nr*1000)/10:0,red:red,bom:bom};
+}
+
+function rebuildDashboard(rows,prevRows){
+  // Detect unique months
+  var months=[...new Set(rows.map(function(r){return r.maand;}))].sort(function(a,b){
+    var mo=["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
+    return mo.indexOf(a)-mo.indexOf(b);
+  });
+  var adviseurs=[...new Set(rows.map(function(r){return r.adviseur;}))].sort();
+  // Build MD
+  months.forEach(function(m){MD[m]=buildStats(rows.filter(function(r){return r.maand===m;}));});
+  // Build AD
+  adviseurs.forEach(function(a){
+    if(!AD[a]) AD[a]={};
+    months.forEach(function(m){
+      var sub=rows.filter(function(r){return r.adviseur===a&&r.maand===m;});
+      if(!sub.length) return;
+      var s=buildStats(sub);
+      var pv={};
+      sub.filter(function(r){return r.provincie;}).forEach(function(r){
+        if(!pv[r.provincie]) pv[r.provincie]={n:0,b:0};
+        pv[r.provincie].n++; if(r.isBestelld) pv[r.provincie].b++;
+      });
+      Object.keys(pv).forEach(function(p){var v=pv[p];v.c=v.n>0?Math.round(v.b/v.n*1000)/10:0;});
+      s.prov=pv; AD[a][m]=s;
+    });
+  });
+  // Build PV
+  months.forEach(function(m){
+    PV[m]={};
+    rows.filter(function(r){return r.maand===m&&r.provincie;}).forEach(function(r){
+      if(!PV[m][r.provincie]) PV[m][r.provincie]={n:0,b:0};
+      PV[m][r.provincie].n++; if(r.isBestelld) PV[m][r.provincie].b++;
+    });
+    Object.keys(PV[m]).forEach(function(p){var v=PV[m][p];v.c=v.n>0?Math.round(v.b/v.n*1000)/10:0;});
+  });
+  var pvTot={};
+  months.forEach(function(m){Object.entries(PV[m]).forEach(function(e){
+    var p=e[0],v=e[1]; if(!pvTot[p]) pvTot[p]={n:0,b:0}; pvTot[p].n+=v.n; pvTot[p].b+=v.b;
+  });});
+  Object.keys(pvTot).forEach(function(p){var v=pvTot[p];v.c=v.n>0?Math.round(v.b/v.n*1000)/10:0;});
+  PV.Totaal=pvTot;
+  // New conversions
+  NC.length=0;
+  if(prevRows){
+    var prevBest={};
+    prevRows.filter(function(r){return r.isBestelld;}).forEach(function(r){prevBest[r.ordernummer+"_"+r.maand]=true;});
+    rows.filter(function(r){return r.isBestelld;}).forEach(function(r){
+      if(!prevBest[r.ordernummer+"_"+r.maand]){
+        NC.push({naam:r.klant||"\u2014",maand:r.maand,adv:r.adviseur,waarde:r.waarde,contact:r.bel_of_mail||"",reden:r.reden||""});
+      }
+    });
+  }
+  // Re-render all charts
+  Object.values(Chart.instances).forEach(function(c){c.destroy();});
+  window._aprDone=false; window._ncDone=false;
+  // Re-init main charts
+  location.reload();
+}
+
+</script>
+</body>
+</html>
